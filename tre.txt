@@ -1,0 +1,26 @@
+.
+├── assets
+│   ├── css
+│   │   ├── login.css
+│   │   └── style.css
+│   └── js
+│       ├── api
+│       │   ├── auth.js
+│       │   └── graphql.js
+│       ├── components
+│       │   ├── card.js
+│       │   ├── graph.js
+│       │   └── navbar.js
+│       ├── main.js
+│       ├── pages
+│       │   ├── login.js
+│       │   └── profile.js
+│       ├── router.js
+│       └── utils
+│           ├── helpers.js
+│           └── storage.js
+├── index.html
+├── README.md
+└── tre.txt
+
+8 directories, 16 files

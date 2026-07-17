@@ -1,191 +1,399 @@
-.profile-page{
-    min-height:100vh;
-    background:#f5f7fb;
-    padding:30px;
+/* --- Modern Design System & Variables --- */
+:root {
+    --bg-main: #f8fafc;
+    --bg-card: #ffffff;
+    --border-color: #096ae9;
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
+    --accent: #4f46e5;
+    --accent-light: #eef2ff;
+    --danger: #ef4444;
+    --success: #10b981;
+    --radius: 16px;
 }
 
-.navbar{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-
-    background:white;
-
-    padding:20px 30px;
-
-    border-radius:15px;
-
-    margin-bottom:30px;
-
-    box-shadow:0 10px 20px rgba(0,0,0,.08);
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-.user-info{
-    display:flex;
-    align-items:center;
-    gap:20px;
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
 }
 
-.avatar{
-    width:70px;
-    height:70px;
-
-    border-radius:50%;
-
-    background:#3b82f6;
-
-    color:white;
-
-    display:flex;
-    justify-content:center;
-    align-items:center;
-
-    font-size:35px;
+/* --- App Layout --- */
+.profile-page {
+    min-height: 100vh;
+    padding: 1.5rem;
+    max-width: 1300px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
+/* --- Glassmorphism Style Header --- */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-card);
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius);
+    border: 1px solid #e2e8f0;
+}
 
-.logout-btn{
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
 
-    width: fit-content;
+.avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--accent-light);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+}
 
-    flex: 0 0 auto;
+.user-info h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
 
-    padding: 12px 20px;
+.user-info p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
 
-    border: none;
-
+.logout-btn {
+    padding: 0.5rem 1.25rem;
+    border: 1px solid #e2e8f0;
     border-radius: 10px;
-
-    background: #ef4444;
-
-    color: white;
-
+    background: transparent;
+    color: var(--text-primary);
+    font-weight: 500;
     cursor: pointer;
-
-    font-weight: bold;
-
+    transition: all 0.2s ease;
 }
 
-.dashboard{
-
-    display:grid;
-
-    grid-template-columns:350px 1fr;
-
-    grid-template-rows:350px 350px;
-
-    gap:25px;
-
+.logout-btn:hover {
+    background: #fff5f5;
+    color: var(--danger);
+    border-color: #fee2e2;
 }
 
-
-.card{
-
-    background:white;
-
-    border-radius:15px;
-
-    padding:25px;
-
-    box-shadow:0 10px 20px rgba(0,0,0,.08);
-
+/* --- Clean Modern Bento Dashboard Grid --- */
+.dashboard {
+    display: grid;
+    /* Grid system automatically adapts sizes intelligently */
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
 }
 
-.projects-card{
-
-    overflow:hidden;
-
+/* Base Card Styling */
+.card {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    border: 1px solid #e2e8f0;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-#projects-list{
-
-    margin-top:20px;
-
-    height:250px;
-
-    overflow-y:auto;
-
+.card:hover {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.02), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
 }
 
-#projects-list::-webkit-scrollbar{
-
-    width:8px;
-
+.card h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: -0.01em;
 }
 
-#projects-list::-webkit-scrollbar-thumb{
-
-    background:#3b82f6;
-
-    border-radius:20px;
-
+/* --- Bento Alignment Overrides (Desktops) --- */
+@media (min-width: 1024px) {
+    .dashboard {
+        grid-template-columns: 350px 1fr; /* Retains structure but fluid widths */
+    }
+    
+    .projects-card {
+        grid-row: span 2; /* Gives projects priority column workspace */
+    }
 }
 
-.summary-card{
+/* --- Component Specific Layouts --- */
 
-    display:flex;
-
-    flex-direction:column;
-
-    align-items:center;
-
-    justify-content:flex-start;
-
+/* XP & Level Summary */
+.summary-card {
+    align-items: center;
+    text-align: center;
 }
 
-.summary-card h2{
-
-    margin-top:10px;
-
-    color:#666;
-
+#total-xp {
+    font-size: 2.5rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--accent);
+    margin-top: -0.5rem;
 }
 
-#total-xp{
-
-    margin:15px 0 40px;
-
-    font-size:40px;
-
-    color:#2563eb;
-
+.level-circle {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    border: 4px solid var(--border-color);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle, #ffffff 60%, var(--bg-main) 100%);
 }
 
-.level-circle{
-
-    width:180px;
-
-    height:180px;
-
-    border-radius:50%;
-
-    border:12px solid #2563eb;
-
-    display:flex;
-
-    flex-direction:column;
-
-    justify-content:center;
-
-    align-items:center;
-
+.level-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
 }
 
-.level-label{
-
-    font-size:18px;
-
-    color:#666;
-
+.level-value {
+    font-size: 2.25rem;
+    font-weight: 700;
 }
 
-.level-value{
-
-    font-size:45px;
-
-    font-weight:bold;
-
-    color:#111;
-
+/* Projects Stack */
+#projects-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    overflow-y: auto;
+    max-height: 520px; /* Limits project growth neatly */
+    padding-right: 4px;
 }
 
+#projects-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+#projects-list::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.project-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: var(--bg-main);
+    border-radius: 12px;
+}
+
+.project-item h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.project-item small {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.project-xp {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--accent);
+}
+
+/* Audit Component */
+.audit-card {
+    align-items: center;
+}
+
+#audit-graph {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#audit-graph svg {
+    max-height: 150px;
+    width: auto;
+}
+
+.audit-info {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.audit-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    font-size: 0.9rem;
+}
+
+.audit-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.audit-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.audit-up { background: var(--accent); }
+.audit-down { background: var(--danger); }
+
+/* Skills Component */
+.skills-card {
+    align-items: center;
+}
+
+#skills-graph {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+}
+
+#skills-graph svg {
+    max-width: 100%;
+    max-height: 200px;
+    height: auto;
+}
+
+/* --- Clean Minimalist Login --- */
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1.5rem;
+    background: var(--bg-main);
+}
+
+.login-card {
+    width: 100%;
+    max-width: 400px;
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    padding: 2.5rem 2rem;
+}
+
+.login-card h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: -0.02em;
+}
+
+.subtitle {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-top: 0.25rem;
+    margin-bottom: 2rem;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.input-group label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.input-group input {
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-main);
+    font-size: 0.95rem;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.input-group input:focus {
+    background: var(--bg-card);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-light);
+}
+
+.login-card button {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 10px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 0.75rem;
+    transition: background 0.2s ease;
+}
+
+.login-card button:hover {
+    background: #4338ca;
+}
+
+#error-message {
+    color: var(--danger);
+    font-size: 0.85rem;
+    text-align: center;
+    margin-top: 1rem;
+}
+
+/* --- Mobile Specific Tweaks --- */
+@media (max-width: 640px) {
+    .profile-page {
+        padding: 1rem;
+        gap: 1rem;
+    }
+    
+    .navbar {
+        padding: 0.75rem 1rem;
+    }
+    
+    .avatar {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+    }
+    
+    .card {
+        padding: 1.25rem;
+    }
+    
+    #total-xp {
+        font-size: 2rem;
+    }
+}

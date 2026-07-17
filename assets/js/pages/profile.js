@@ -2,11 +2,13 @@ import { removeToken } from "../utils/storage.js";
 import { router } from "../router.js";
 import { graphqlRequest } from "../api/graphql.js";
 import { formatXP , getLatestSkills , formatSkillName , getLatestProjects} from "../utils/helpers.js";
+import { auditGraph } from "../components/graph.js";
+import { skillsRadarGraph } from "../components/graph.js";
 
 
 const PROFILE_QUERY = `
 {
-user {
+  user {
     id
     login
     auditRatio
@@ -14,15 +16,8 @@ user {
     totalDown
     attrs
 
-    cohort: events(
-      where: {
-        cohorts: {
-          labelName: {
-            _is_null: false
-          }
-        }
-      }
-    ) {
+    # Updated inline cohort mapping here
+    cohort: events(where: {cohorts: {labelName: {_is_null: false}}}) {
       cohorts {
         labelName
       }
@@ -109,19 +104,19 @@ user {
     amount
   }
 
-  projects: result(
+  projects: transaction(
     where: {
+      type: { _eq: "xp" }
+      eventId: { _eq: 41 }
       object: {
-        type: {
-          _eq: "project"
-        }
+        type: { _eq: "project" }
       }
     }
     order_by: {
       createdAt: desc
     }
   ) {
-    grade
+    amount
     createdAt
     path
 
@@ -133,7 +128,6 @@ user {
   }
 }
 `;
-
 
 export function profileTemplate() {
     return `
@@ -203,8 +197,7 @@ export function profileTemplate() {
 
                 </div>
 
-
-                <div class="card audit-card">
+                <div class="audit-card card">
 
                     <h2>
                         Audit Ratio
@@ -214,8 +207,39 @@ export function profileTemplate() {
 
                     </div>
 
-                </div>
+                    <div class="audit-info">
 
+                    <div class="audit-item">
+
+                        <div class="audit-left">
+
+                            <span class="audit-dot audit-up"></span>
+
+                            <span>Up</span>
+
+                        </div>
+
+                        <span id="audit-up"></span>
+
+                    </div>
+
+                    <div class="audit-item">
+
+                        <div class="audit-left">
+
+                            <span class="audit-dot audit-down"></span>
+
+                            <span>Down</span>
+
+                        </div>
+
+                        <span id="audit-down"></span>
+
+                    </div>
+
+                    </div>
+
+                </div>
 
                 <div class="card skills-card">
 
@@ -228,7 +252,7 @@ export function profileTemplate() {
                     </div>
 
                 </div>
-
+              
             </main>
 
         </section>
@@ -244,9 +268,12 @@ export async function initProfile() {
 
         const user = data.user[0];
 
+        console.log(data)
+
         document.getElementById("username").textContent = user.login;
 
-        const cohort = user.cohort?.[0]?.cohorts?.labelName || "Unknown";
+        const cohort = user?.cohort[0]?.cohorts[0]?.labelName|| "Unknown";
+
 
         document.getElementById("cohort").textContent = cohort;
 
@@ -254,73 +281,30 @@ export async function initProfile() {
 
         document.getElementById("level").textContent = data.level.aggregate.max?.amount || 0;
 
-        document.getElementById("audit-ratio").textContent = (user.auditRatio ?? 0).toFixed(1);
+        document.getElementById("audit-graph").innerHTML = auditGraph(user.totalUp, user.totalDown);
 
-        document.getElementById("total-up").textContent = formatXP(user.totalUp || 0);
+        document.getElementById("audit-up").textContent = formatXP(user.totalUp);
 
-        document.getElementById("total-down").textContent = formatXP(user.totalDown || 0);
-
-        const skillsList = document.getElementById("skills-list");
+        document.getElementById("audit-down").textContent = formatXP(user.totalDown);
 
         const skills = getLatestSkills(data.skills);
 
-        let html = "";
+        const topSkills = skills.sort((a, b) => b.amount - a.amount).slice(0, 8);
 
-        skills.forEach((skill) => {
+        document.getElementById("skills-graph").innerHTML = skillsRadarGraph(topSkills);
 
-            html += `
-                <div class="skill">
-
-                    <div class="skill-header">
-
-                        <span>${formatSkillName(skill.type)}</span>
-
-                        <span>${skill.amount}</span>
-
-                    </div>
-
-                    <div class="skill-bar">
-
-                        <div
-                            class="skill-fill"
-                            style="width:${Math.min(skill.amount,100)}%">
-                        </div>
-
-                    </div>
-
-                </div>`;});
-
-        skillsList.innerHTML = html;
-        
         const projectsList = document.getElementById("projects-list");
 
-        const projects = getLatestProjects(data.projects);
-        
-        const names = data.projects.map(project => project.object.name);
-
-        console.log(names);
-
-        const count = {};
+        projectsList.innerHTML = "";
 
         data.projects.forEach(project => {
-            const name = project.object.name;
-            count[name] = (count[name] || 0) + 1;
-        });
 
-        console.log(count);
-        
-        let htmlproject = "";
+            projectsList.innerHTML += `
+                <div class="project-item">
 
-        projects.forEach((project) => {
+                    <div class="project-info">
 
-            htmlproject += `
-                <div class="project-card">
-
-                    <div>
-
-                        <h3>
-                            ${project.object.name}
-                        </h3>
+                        <h4>${project.object.name}</h4>
 
                         <small>
                             ${new Date(project.createdAt).toLocaleDateString()}
@@ -328,18 +312,16 @@ export async function initProfile() {
 
                     </div>
 
-                    <div>
+                    <div class="project-xp">
 
                         ${formatXP(project.amount)}
 
                     </div>
 
                 </div>
-    `;
+            `;
 
-});
-
-projectsList.innerHTML = htmlproject;
+        });
 
     }catch (error) {
         console.error("Error initializing profile:", error);

@@ -17,7 +17,5 @@ export async function login(identifier, password) {
 
     const token = (await response.text()).replace(/^"|"$/g, "");
 
-return token;
-
     return token;
 }

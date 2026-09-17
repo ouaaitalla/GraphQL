@@ -268,7 +268,6 @@ export async function initProfile() {
 
         const user = data.user[0];
 
-        console.log(data)
 
         document.getElementById("username").textContent = user.login;
 

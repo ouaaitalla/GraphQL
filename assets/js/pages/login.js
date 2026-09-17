@@ -75,9 +75,6 @@ export function initLogin() {
         try {
 
             const token = await login(identifier, password);
-            console.log(token);
-            console.log(typeof token);
-            console.log(JSON.stringify(token));
             setToken(token);
             router();
         } catch (error) {

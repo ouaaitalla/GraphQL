@@ -25,9 +25,12 @@ export function auditGraph(up, down) {
 
     // When down is 0 the ratio is displayed as the total "up" figure;
     // otherwise show the up/down quotient with one decimal.
-    const ratioLabel = down === 0
-        ? formatXP(up)
-        : ratio.toFixed(1);
+    // null, undefined, NaN and non-finite values are shown as a dash.
+    const ratioLabel = !Number.isFinite(ratio)
+        ? "-"
+        : down === 0
+            ? formatXP(up)
+            : ratio.toFixed(1);
 
     return `
         <svg

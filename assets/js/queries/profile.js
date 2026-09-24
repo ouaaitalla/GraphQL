@@ -1,40 +1,21 @@
 // GraphQL documents sent to the Zone01 Ouujda GraphQL engine.
 // This module must contain ONLY query strings — no fetching, no DOM, no logic.
 
-export const PROFILE_QUERY = `
-{
-   user {
+export const PROFILE_QUERY = `{
+  user {
     id
     login
     auditRatio
     totalUp
     totalDown
-
-    # Updated inline cohort mapping here    cohort: events(where: {cohorts: {labelName: {_is_null: false}}}) {
+    cohort: events(where: {cohorts: {labelName: {_is_null: false}}}) {
       cohorts {
         labelName
       }
     }
-
- 
-
-   
-    
   }
-
   totalXP: transaction_aggregate(
-    where: {
-      type: {
-        _eq: "xp"
-      }
-      event: {
-        object: {
-          name: {
-            _eq: "Module"
-          }
-        }
-      }
-    }
+    where: {type: {_eq: "xp"}, event: {object: {name: {_eq: "Module"}}}}
   ) {
     aggregate {
       sum {
@@ -42,20 +23,8 @@ export const PROFILE_QUERY = `
       }
     }
   }
-
   level: transaction_aggregate(
-    where: {
-      type: {
-        _eq: "level"
-      }
-      event: {
-        object: {
-          name: {
-            _eq: "Module"
-          }
-        }
-      }
-    }
+    where: {type: {_eq: "level"}, event: {object: {name: {_eq: "Module"}}}}
   ) {
     aggregate {
       max {
@@ -63,44 +32,24 @@ export const PROFILE_QUERY = `
       }
     }
   }
-
   skills: transaction(
-    where: {
-      type: {
-        _ilike: "%skill%"
-      }
-    }
-    order_by: {
-      amount: desc
-    }
+    where: {type: {_ilike: "%skill%"}}
+    order_by: {amount: desc}
   ) {
     type
     amount
   }
-
   projects: transaction(
-    where: {
-      type: { _eq: "xp" }
-      eventId: { _eq: 41 }
-      object: {
-        type: { _eq: "project" }
-      }
-    }
-    order_by: {
-      createdAt: desc
-    }
+    where: {type: {_eq: "xp"}, eventId: {_eq: 41}, object: {type: {_eq: "project"}}}
+    order_by: {createdAt: desc}
   ) {
     amount
     createdAt
     path
-
     object {
       id
       name
       type
     }
   }
-}
-
-
-`;
+}`

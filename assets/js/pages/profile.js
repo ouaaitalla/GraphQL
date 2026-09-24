@@ -53,7 +53,7 @@ export function profileTemplate() {
                     <h1 id="total-xp">-</h1>
 
                     <div class="level-circle">
-
+formatxp
                     <span class="level-label">
                         Level
                     </span>
@@ -62,7 +62,7 @@ export function profileTemplate() {
                         -
                     </span>
 
-                    </div>
+                    </div>formatxp
 
                 </div>
 
@@ -156,6 +156,7 @@ export async function initProfile(rerender) {
     try {
 
         const data = await graphqlRequest(PROFILE_QUERY);
+        console.log(data)
 
         const profile = mapProfileData(data);
 

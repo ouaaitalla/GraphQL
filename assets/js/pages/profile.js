@@ -1,7 +1,7 @@
 import { removeToken } from "../utils/storage.js";
 import { router } from "../router.js";
-import { graphqlRequest } from "../api/graphql.js";
-import { formatXP , getLatestSkills , formatSkillName , getLatestProjects} from "../utils/helpers.js";
+import { graphqlRequest, AuthError } from "../api/graphql.js";
+import { formatXP, getLatestSkills, getLatestProjects } from "../utils/helpers.js";
 import { auditGraph } from "../components/graph.js";
 import { skillsRadarGraph } from "../components/graph.js";
 
@@ -252,7 +252,7 @@ export function profileTemplate() {
                     </div>
 
                 </div>
-              
+
             </main>
 
         </section>
@@ -261,6 +261,15 @@ export function profileTemplate() {
 
 export async function initProfile() {
 
+    const logoutBtn = document.getElementById("logout-btn");
+
+    logoutBtn.addEventListener("click", () => {
+
+        removeToken();
+
+        router();
+
+    });
 
     try {
 
@@ -268,42 +277,67 @@ export async function initProfile() {
 
         const user = data.user[0];
 
+    document.getElementById("username").textContent = user.login;
 
-        document.getElementById("username").textContent = user.login;
-
-        const cohort = user?.cohort[0]?.cohorts[0]?.labelName|| "Unknown";
+    const cohort = user?.cohort[0]?.cohorts[0]?.labelName || "Unknown";
 
 
-        document.getElementById("cohort").textContent = cohort;
+    document.getElementById("cohort").textContent = cohort;
 
-        document.getElementById("total-xp").textContent = formatXP(data.totalXP.aggregate.sum?.amount || 0);
+    document.getElementById("total-xp").textContent = formatXP(Math.round(data.totalXP.aggregate.sum?.amount) || 0);
 
-        document.getElementById("level").textContent = data.level.aggregate.max?.amount || 0;
+    document.getElementById("level").textContent = data.level.aggregate.max?.amount || 0;
 
-        document.getElementById("audit-graph").innerHTML = auditGraph(user.totalUp, user.totalDown);
+    document.getElementById("audit-graph").innerHTML = auditGraph(user.totalUp, user.totalDown);
 
-        document.getElementById("audit-up").textContent = formatXP(user.totalUp);
+    document.getElementById("audit-up").textContent = formatXP(user.totalUp);
 
-        document.getElementById("audit-down").textContent = formatXP(user.totalDown);
+    document.getElementById("audit-down").textContent = formatXP(user.totalDown);
 
-        const skills = getLatestSkills(data.skills);
+    const skills = getLatestSkills(data.skills);
 
-        const topSkills = skills.sort((a, b) => b.amount - a.amount).slice(0, 8);
+    const topSkills = skills.sort((a, b) => b.amount - a.amount).slice(0, 8);
 
-        document.getElementById("skills-graph").innerHTML = skillsRadarGraph(topSkills);
+    const skillsGraph = document.getElementById("skills-graph");
 
-        const projectsList = document.getElementById("projects-list");
+    if (topSkills.length === 0) {
 
-        projectsList.innerHTML = "";
+        skillsGraph.innerHTML = `
+            <p class="empty-state">
+                No skill data available yet.
+            </p>
+        `;
 
-        data.projects.forEach(project => {
+    } else {
+
+        skillsGraph.innerHTML = skillsRadarGraph(topSkills);
+
+    }
+
+    const projectsList = document.getElementById("projects-list");
+
+    projectsList.innerHTML = "";
+
+    const projects = getLatestProjects(data.projects);
+
+    if (projects.length === 0) {
+
+        projectsList.innerHTML = `
+            <p class="empty-state">
+                No projects completed yet.
+            </p>
+        `;
+
+    } else {
+
+        projects.forEach(project => {
 
             projectsList.innerHTML += `
                 <div class="project-item">
 
                     <div class="project-info">
 
-                        <h4>${project.object.name}</h4>
+                        <h4>${escapeHTML(project.object.name)}</h4>
 
                         <small>
                             ${new Date(project.createdAt).toLocaleDateString()}
@@ -322,19 +356,47 @@ export async function initProfile() {
 
         });
 
-    }catch (error) {
-        console.error("Error initializing profile:", error);
     }
 
-    const logoutBtn = document.getElementById("logout-btn");
+    } catch (error) {
 
-    logoutBtn.addEventListener("click", () => {
+        if (error instanceof AuthError) {
 
-        removeToken();
+            router();
 
-        router();
+            return;
 
-    });
+        }
+
+        console.error("Error initializing profile:", error);
+
+        showError(error.message || "Something went wrong while loading your profile");
+
+    }
+
+}
+
+function showError(message) {
+
+    const errorBox = document.getElementById("profile-error");
+
+    const errorMessage = document.getElementById("profile-error-message");
+
+    errorMessage.textContent = message;
+
+    errorBox.hidden = false;
+
+}
+
+
+function escapeHTML(value) {
+
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
 
 }
 

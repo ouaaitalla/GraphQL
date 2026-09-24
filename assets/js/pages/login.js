@@ -41,11 +41,11 @@ export function loginTemplate() {
                         >
                     </div>
 
-                    <button type="submit">
+                    <button type="submit" id="login-btn">
                         Login
                     </button>
 
-                    <p id="error-message"></p>
+                    <p id="error-message" role="alert" aria-live="assertive"></p>
 
                 </form>
 
@@ -72,15 +72,36 @@ export function initLogin() {
             .getElementById("password")
             .value;
 
+        const button = document.getElementById("login-btn");
+
+        const errorMessage = document.getElementById("error-message");
+
+        errorMessage.textContent = "";
+
+        button.disabled = true;
+
+        button.textContent = "Signing in...";
+
         try {
 
             const token = await login(identifier, password);
+
             setToken(token);
+
             router();
+
         } catch (error) {
 
-            const errorMessage = document.getElementById("error-message");
-            errorMessage.textContent = error.message;
+            errorMessage.textContent =
+                error.name === "TypeError"
+                    ? "Network error — please check your connection and try again"
+                    : error.message;
+
+        } finally {
+
+            button.disabled = false;
+
+            button.textContent = "Login";
 
         }
 

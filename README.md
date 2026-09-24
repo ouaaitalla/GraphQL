@@ -92,7 +92,7 @@ Implemented in `assets/js/api/auth.js`:
 5. Every subsequent GraphQL request includes the header `Authorization: Bearer <token>`.
 6. **Logout** removes the token from `localStorage` and re-runs the router, returning the user to the login page.
 
-> The token is a JWT whose payload contains a `https://hasura.io/jwt/claims` object with an `x-hasura-user-id` field. `assets/js/utils/helpers.js` contains a `getUserIdFromToken()` helper that decodes this claim (the GraphQL `user` query itself relies on the server-side JWT context rather than an explicit `id` argument).
+> The JWT payload contains a `https://hasura.io/jwt/claims` object with an `x-hasura-user-id` field. The GraphQL `user` query itself relies on the server-side JWT context rather than an explicit `id` argument, so no client-side JWT decoding is needed.
 
 ---
 
@@ -104,7 +104,7 @@ All profile data comes from a **single GraphQL query** (`PROFILE_QUERY` in `asse
 - **Method:** `POST`
 - **Headers:** `Content-Type: application/json`, `Authorization: Bearer <token>`
 - **Variables:** the helper accepts a `variables` object (`graphqlRequest(query, variables)`), but `PROFILE_QUERY` uses none — all filtering is done inline in the query.
-- **Error handling:** if the HTTP response is not OK or the response body contains `errors`, the helper throws with the first error message (or a fallback *"GraphQL request failed"*); `initProfile()` catches and logs it.
+- **Error handling:** if the HTTP response is not OK or the response body contains `errors`, the helper throws with the first error message (or a fallback *"GraphQL request failed"*). Network failures and malformed JSON responses are also caught and surfaced as friendly errors. When the failure is an authentication problem (HTTP 401 or a JWT/expired-token error message), the helper removes the stored token and throws an `AuthError`; `initProfile()` catches it and re-routes to the login page.
 
 ### Query structure and how each field is used
 
@@ -127,9 +127,9 @@ The response is expected in the shape `data.user[0]` (an array with the authenti
 3. Helpers in `assets/js/utils/helpers.js` transform values:
    - `formatXP(value)` — divides by 1000 into **B / KB / MB** units (2 decimals when not an integer; `0 B` for falsy values).
    - `getLatestSkills(skills)` — keeps only the **first** (highest-amount) transaction per skill type, deduplicating repeats.
-   - `formatSkillName(name)` — strips the `skill_` prefix, replaces hyphens with spaces, and title-cases (imported but **not currently used** by the radar chart).
-   - `getLatestProjects(projects)` — deduplicates projects by name (imported but **not currently called** in `profile.js`).
-4. `profile.js` takes the top 8 skills by amount, renders both SVG charts into their containers, and appends one HTML block per project.
+   - `formatSkillName(name)` — strips the `skill_` prefix, replaces hyphens with spaces, and title-cases.
+   - `getLatestProjects(projects)` — deduplicates projects by name.
+4. `profile.js` takes the top 8 skills by amount, renders both SVG charts into their containers, and appends one HTML block per project (project names are HTML-escaped before interpolation).
 5. Rendering is a one-shot operation on page load — there is no polling, refresh interval, or live update.
 
 ---
@@ -141,13 +141,13 @@ Both charts are pure **string-generated inline SVG** (no charting library), in `
 ### Audit Ratio — donut chart (`auditGraph(up, down)`)
 
 - **Data:** the user's `totalUp` and `totalDown` audit byte totals.
-- **Calculation:** `percent = up / (up + down) × 100`; a circle of radius 80 has `stroke-dasharray` set to its circumference and `stroke-dashoffset` to the unfilled portion, so the indigo arc represents the "up" share. Centered text shows `ratio = up / down` (or `up` alone when `down === 0`), labeled *"Ratio"*.
+- **Calculation:** `percent = up / (up + down) × 100`; a circle of radius 80 has `stroke-dasharray` set to its circumference and `stroke-dashoffset` to the unfilled portion, so the indigo arc represents the "up" share. Centered text shows `ratio = up / down` (or the raw `up` figure when `down === 0`), labeled *"Ratio"*. The SVG carries an `aria-label` describing the ratio.
 - Rendered into `#audit-graph`; the numeric Up/Down totals below it are formatted with `formatXP()`.
 
 ### Skills — radar chart (`skillsRadarGraph(skills)`)
 
 - **Data:** the top 8 skill types and their amounts (after deduplication in `getLatestSkills()`).
-- **Calculation:** axes are placed at even angles around a 260×260 SVG (radius 80, starting at the top); each polygon vertex sits at `radius × (amount / 100)` along its axis — so the chart assumes skill amounts are on a 0–100 scale. Axis lines, vertex labels (with the `skill_` prefix stripped), and a filled semi-transparent polygon are assembled as SVG strings.
+- **Calculation:** axes are placed at even angles around a 260×260 SVG (radius 80, starting at the top); each polygon vertex sits at `radius × (amount / maxAmount)` along its axis — values are normalized against the highest skill, so the shape stays readable regardless of the absolute amounts. Axis lines, vertex labels (with the `skill_` prefix stripped, anchored toward the chart so long names are not clipped), and a filled semi-transparent polygon are assembled as SVG strings. An empty skill list renders an empty-state message instead of a chart.
 - Rendered into `#skills-graph`.
 
 Both charts render once when the profile loads; they are not interactive and do not animate.
@@ -180,25 +180,23 @@ graphql-profile/
 ├── index.html                     # Entry point: empty #app container + main.js module
 ├── assets/
 │   ├── css/
-│   │   └── profile.css            # Full design system: variables, login page, dashboard grid, cards, responsive rules
+│   │   └── profile.css            # Full design system: variables, login page, dashboard grid, cards, error/empty states, responsive rules
 │   └── js/
 │       ├── main.js                # Bootstrap: imports and calls router()
 │       ├── router.js              # Token check → renders login or profile page
 │       ├── api/
 │       │   ├── auth.js            # Basic-auth sign-in request → JWT token
-│       │   └── graphql.js         # Shared graphqlRequest() helper (Bearer token, error handling)
+│       │   └── graphql.js         # Shared graphqlRequest() helper (Bearer token, AuthError, error handling)
 │       ├── components/
-│       │   ├── graph.js           # auditGraph() donut + skillsRadarGraph() radar (SVG generators)
-│       │   ├── navbar.js          # Empty placeholder (not imported anywhere)
-│       │   └── card.js            # Empty placeholder (not imported anywhere)
+│       │   └── graph.js           # auditGraph() donut + skillsRadarGraph() radar (SVG generators)
 │       ├── pages/
-│       │   ├── login.js           # Login template + form submit handler
-│       │   └── profile.js         # Profile template, PROFILE_QUERY, initProfile() rendering
+│       │   ├── login.js           # Login template + form submit handler (loading state, error display)
+│       │   └── profile.js         # Profile template, PROFILE_QUERY, initProfile() rendering, error/empty states
 │       └── utils/
-│           ├── helpers.js         # formatXP(), getLatestSkills(), formatSkillName(), getLatestProjects(), getUserIdFromToken()
+│           ├── helpers.js         # formatXP(), getLatestSkills(), formatSkillName(), getLatestProjects()
 │           └── storage.js         # getToken() / setToken() / removeToken() (localStorage)
 ├── README.md
-└── tre.txt                        # Saved directory-tree listing (reference only)
+└── tre.txt                        # Saved directory-tree listing (reference only; may be outdated)
 ```
 
 ---
@@ -250,11 +248,8 @@ The repository contains **no `netlify.toml` and no build configuration** — whi
 
 A few observations from the code, useful for maintainers:
 
-- `assets/js/pages/login.js` logs the received token to the console (`console.log(token)`) after successful sign-in — a leftover debug statement.
-- `assets/js/api/auth.js` contains an unreachable duplicate `return token;` statement.
-- `pages/profile.js` contains a `console.log(data)` of the full GraphQL response in `initProfile()`.
-- `formatSkillName()` and `getLatestProjects()` are defined and imported but never executed in the current rendering path.
-- `components/navbar.js` and `components/card.js` exist but are empty and unused; the navbar markup lives inside `profileTemplate()`.
+- `pages/profile.js` shows an inline error banner with a **Try again** button when the GraphQL request fails (except for auth errors, which re-route to login), and renders empty-state messages when there are no skills or projects.
+- Project names from the API are HTML-escaped (`escapeHTML()` in `profile.js`) before being interpolated into markup.
 - The GraphQL query filters on a hard-coded `eventId: 41` for the projects list, which ties it to a specific cohort/event in the Zone01 platform.
 
 ---
@@ -263,10 +258,9 @@ A few observations from the code, useful for maintainers:
 
 Suggestions based on the current codebase (not existing features):
 
-- Remove debug `console.log` statements and the unreachable `return` in `auth.js`.
 - Move the hard-coded API URLs into a small config module (or environment-driven config at build time) so the backend can be swapped without editing source.
-- Use `formatSkillName()` for readable radar labels, and apply `getLatestProjects()` to deduplicate the project list.
+- Use `formatSkillName()` for readable radar labels (it is available in `helpers.js` but the radar currently renders the raw type minus the `skill_` prefix).
 - Add an XP-over-time line/area chart — the data source (`transaction` with `createdAt`) already supports it.
 - Show the already-fetched `auditRatio` and succeeded/failed audit counts somewhere in the dashboard.
-- Guard against expired/invalid tokens (e.g., detect a GraphQL auth error and clear the token + return to login instead of only logging to console).
-- Replace `innerHTML`-based rendering with small DOM-builder helpers to avoid HTML injection from API data (project names are interpolated into markup unescaped).
+- Remove the hard-coded `eventId: 41` filter so the projects list adapts to any cohort/event.
+- Replace `innerHTML`-based rendering with small DOM-builder helpers to further reduce injection surface (project names are already escaped).

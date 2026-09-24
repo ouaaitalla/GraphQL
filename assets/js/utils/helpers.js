@@ -1,34 +1,3 @@
-import { getToken } from "./storage.js";
-
-export function getUserIdFromToken() {
-
-    const token = getToken();
-
-    if (!token) {
-        return null;
-    }
-
-    try {
-
-        const payload = token.split(".")[1];
-
-        const decodedPayload = JSON.parse(atob(payload));
-
-        return Number(
-            decodedPayload["https://hasura.io/jwt/claims"]["x-hasura-user-id"]
-        );
-
-    } catch (error) {
-
-        console.error("Invalid JWT:", error);
-
-        return null;
-
-    }
-
-}
-
-
 export function formatXP(value) {
 
     if (!value) {
@@ -47,7 +16,7 @@ export function formatXP(value) {
 
     const formatted = Number.isInteger(xp)
         ? xp
-        : xp.toFixed(2);
+        : xp.toFixed(0);
 
     return `${formatted} ${units[unitIndex]}`;
 

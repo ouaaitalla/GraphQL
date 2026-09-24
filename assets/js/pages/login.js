@@ -1,6 +1,10 @@
+// Login page: template string + event wiring for the sign-in form.
+// Network logic lives in the auth API; token persistence in utils/storage.
+// The router is injected as a callback (initLogin(rerender)) so pages do
+// not import the router, keeping the dependency direction one-way.
+
 import { login } from "../api/auth.js";
 import { setToken } from "../utils/storage.js";
-import { router } from "../router.js";
 
 export function loginTemplate() {
     return `
@@ -55,7 +59,7 @@ export function loginTemplate() {
 }
 
 
-export function initLogin() {
+export function initLogin(rerender) {
 
     const form = document.getElementById("login-form");
 
@@ -88,7 +92,7 @@ export function initLogin() {
 
             setToken(token);
 
-            router();
+            rerender();
 
         } catch (error) {
 

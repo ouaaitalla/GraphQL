@@ -1,4 +1,7 @@
-const AUTH_URL = "https://learn.zone01oujda.ma/api/auth/signin";
+// Authentication API: exchanges Zone01 credentials for a JWT.
+// Network layer only — no DOM access and no token storage here.
+
+import { AUTH_URL } from "../config/api.js";
 
 export async function login(identifier, password) {
 

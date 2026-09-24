@@ -1,3 +1,6 @@
+// Minimal hash-less router: checks the auth token and mounts the
+// matching page (login or profile) into the #app container.
+
 import { loginTemplate, initLogin } from "./pages/login.js";
 import { profileTemplate, initProfile } from "./pages/profile.js";
 import { getToken } from "./utils/storage.js";
@@ -11,12 +14,12 @@ export function router() {
     if (token) {
 
         app.innerHTML = profileTemplate();
-        initProfile();
+        initProfile(router);
 
     } else {
 
         app.innerHTML = loginTemplate();
-        initLogin();
+        initLogin(router);
 
     }
 }

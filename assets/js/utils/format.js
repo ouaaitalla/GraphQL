@@ -1,3 +1,6 @@
+// Generic, dependency-free formatting helpers.
+// These must stay pure string/number utilities — no API, DOM or app knowledge.
+
 export function formatXP(value,n=0) {
 
     if (!value) {
@@ -22,45 +25,11 @@ export function formatXP(value,n=0) {
 
 }
 
-export function getLatestSkills(skills) {
-
-    const latestSkills = {};
-
-    for (const skill of skills) {
-
-        if (!latestSkills[skill.type]) {
-            latestSkills[skill.type] = skill;
-        }
-
-    }
-
-    return Object.values(latestSkills);
-
-}
-
 export function formatSkillName(name) {
 
     return name
         .replace("skill_", "")
         .replaceAll("-", " ")
         .replace(/\b\w/g, letter => letter.toUpperCase());
-
-}
-
-export function getLatestProjects(projects) {
-
-    const latestProjects = {};
-
-    for (const project of projects) {
-
-        const projectName = project.object.name;
-
-        if (!latestProjects[projectName]) {
-            latestProjects[projectName] = project;
-        }
-
-    }
-
-    return Object.values(latestProjects);
 
 }

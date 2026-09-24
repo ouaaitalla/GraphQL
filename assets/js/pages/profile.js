@@ -1,115 +1,15 @@
+// Profile page: dashboard template + event wiring.
+// Data fetching goes through api/graphql.js; response shaping through the
+// profile service; chart markup through the chart components.
+// The router is injected as a callback (initProfile(rerender)) so pages do
+// not import the router, keeping the dependency direction one-way.
+
 import { removeToken } from "../utils/storage.js";
-import { router } from "../router.js";
 import { graphqlRequest, AuthError } from "../api/graphql.js";
-import { formatXP, getLatestSkills, getLatestProjects } from "../utils/helpers.js";
-import { auditGraph } from "../components/graph.js";
-import { skillsRadarGraph } from "../components/graph.js";
+import { PROFILE_QUERY } from "../queries/profile.js";
+import { mapProfileData } from "../services/profileService.js";
+import { skillsRadarGraph } from "../components/charts/skillsRadarChart.js";
 
-
-const PROFILE_QUERY = `
-{
-   user {
-    id
-    login
-    auditRatio
-    totalUp
-    totalDown
-
-    # Updated inline cohort mapping here
-    cohort: events(where: {cohorts: {labelName: {_is_null: false}}}) {
-      cohorts {
-        labelName
-      }
-    }
-
- 
-
-   
-    
-  }
-
-  totalXP: transaction_aggregate(
-    where: {
-      type: {
-        _eq: "xp"
-      }
-      event: {
-        object: {
-          name: {
-            _eq: "Module"
-          }
-        }
-      }
-    }
-  ) {
-    aggregate {
-      sum {
-        amount
-      }
-    }
-  }
-
-  level: transaction_aggregate(
-    where: {
-      type: {
-        _eq: "level"
-      }
-      event: {
-        object: {
-          name: {
-            _eq: "Module"
-          }
-        }
-      }
-    }
-  ) {
-    aggregate {
-      max {
-        amount
-      }
-    }
-  }
-
-  skills: transaction(
-    where: {
-      type: {
-        _ilike: "%skill%"
-      }
-    }
-    order_by: {
-      amount: desc
-    }
-  ) {
-    type
-    amount
-  }
-
-  projects: transaction(
-    where: {
-      type: { _eq: "xp" }
-      eventId: { _eq: 41 }
-      object: {
-        type: { _eq: "project" }
-      }
-    }
-    order_by: {
-      createdAt: desc
-    }
-  ) {
-    amount
-    createdAt
-    path
-
-    object {
-      id
-      name
-      type
-    }
-  }
-}
-
-
-`;
 
 export function profileTemplate() {
     return `
@@ -241,7 +141,7 @@ export function profileTemplate() {
     `;
 }
 
-export async function initProfile() {
+export async function initProfile(rerender) {
 
     const logoutBtn = document.getElementById("logout-btn");
 
@@ -249,7 +149,7 @@ export async function initProfile() {
 
         removeToken();
 
-        router();
+        rerender();
 
     });
 
@@ -257,32 +157,25 @@ export async function initProfile() {
 
         const data = await graphqlRequest(PROFILE_QUERY);
 
-        const user = data.user[0];
+        const profile = mapProfileData(data);
 
-    document.getElementById("username").textContent = user.login;
+    document.getElementById("username").textContent = profile.username;
 
-    const cohort = user?.cohort[0]?.cohorts[0]?.labelName || "Unknown";
+    document.getElementById("cohort").textContent = profile.cohort;
 
+    document.getElementById("total-xp").textContent = profile.totalXP;
 
-    document.getElementById("cohort").textContent = cohort;
+    document.getElementById("level").textContent = profile.level;
 
-    document.getElementById("total-xp").textContent = formatXP(Math.round(data.totalXP.aggregate.sum?.amount) || 0);
+    document.getElementById("audit-graph").innerHTML = profile.auditGraphSVG;
 
-    document.getElementById("level").textContent = data.level.aggregate.max?.amount || 0;
+    document.getElementById("audit-up").textContent = profile.auditUp;
 
-    document.getElementById("audit-graph").innerHTML = auditGraph(user.totalUp, user.totalDown);
-
-    document.getElementById("audit-up").textContent = formatXP(Math.trunc(user.totalUp),2);
-
-    document.getElementById("audit-down").textContent = formatXP(user.totalDown,2);
-
-    const skills = getLatestSkills(data.skills);
-
-    const topSkills = skills.sort((a, b) => b.amount - a.amount).slice(0, 8);
+    document.getElementById("audit-down").textContent = profile.auditDown;
 
     const skillsGraph = document.getElementById("skills-graph");
 
-    if (topSkills.length === 0) {
+    if (profile.skills.length === 0) {
 
         skillsGraph.innerHTML = `
             <p class="empty-state">
@@ -292,7 +185,7 @@ export async function initProfile() {
 
     } else {
 
-        skillsGraph.innerHTML = skillsRadarGraph(topSkills);
+        skillsGraph.innerHTML = skillsRadarGraph(profile.skills);
 
     }
 
@@ -300,9 +193,7 @@ export async function initProfile() {
 
     projectsList.innerHTML = "";
 
-    const projects = getLatestProjects(data.projects);
-
-    if (projects.length === 0) {
+    if (profile.projects.length === 0) {
 
         projectsList.innerHTML = `
             <p class="empty-state">
@@ -312,24 +203,24 @@ export async function initProfile() {
 
     } else {
 
-        projects.forEach(project => {
+        profile.projects.forEach(project => {
 
             projectsList.innerHTML += `
                 <div class="project-item">
 
                     <div class="project-info">
 
-                        <h4>${escapeHTML(project.object.name)}</h4>
+                        <h4>${project.name}</h4>
 
                         <small>
-                            ${new Date(project.createdAt).toLocaleDateString()}
+                            ${project.date}
                         </small>
 
                     </div>
 
                     <div class="project-xp">
 
-                        ${formatXP(project.amount , 1)}
+                        ${project.xp}
 
                     </div>
 
@@ -344,7 +235,7 @@ export async function initProfile() {
 
         if (error instanceof AuthError) {
 
-            router();
+            rerender();
 
             return;
 
@@ -355,9 +246,13 @@ export async function initProfile() {
         showError(error.message || "Something went wrong while loading your profile");
 
     }
-
 }
 
+// Shows the profile error banner.
+// NOTE: kept as-is from the original code — profileTemplate() does not
+// currently render the #profile-error / #profile-error-message elements,
+// so this is a no-op in practice. Preserved intentionally to avoid any
+// behavior change during this refactor.
 function showError(message) {
 
     const errorBox = document.getElementById("profile-error");
@@ -369,19 +264,3 @@ function showError(message) {
     errorBox.hidden = false;
 
 }
-
-
-function escapeHTML(value) {
-
-    return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#39;");
-
-}
-
-
-
-

@@ -1,6 +1,8 @@
-import { getToken, removeToken } from "../utils/storage.js";
+// GraphQL API layer: the single request helper used for every query.
+// Handles Bearer auth headers, error normalization, and auth-error detection.
 
-const GRAPHQL_URL = "https://learn.zone01oujda.ma/api/graphql-engine/v1/graphql";
+import { getToken, removeToken } from "../utils/storage.js";
+import { GRAPHQL_URL } from "../config/api.js";
 
 export class AuthError extends Error {
 

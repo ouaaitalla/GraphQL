@@ -8,13 +8,12 @@ import { skillsRadarGraph } from "../components/graph.js";
 
 const PROFILE_QUERY = `
 {
-  user {
+   user {
     id
     login
     auditRatio
     totalUp
     totalDown
-    attrs
 
     # Updated inline cohort mapping here
     cohort: events(where: {cohorts: {labelName: {_is_null: false}}}) {
@@ -23,29 +22,10 @@ const PROFILE_QUERY = `
       }
     }
 
-    success: audits_aggregate(
-      where: {
-        closureType: {
-          _eq: succeeded
-        }
-      }
-    ) {
-      aggregate {
-        count
-      }
-    }
+ 
 
-    failed: audits_aggregate(
-      where: {
-        closureType: {
-          _eq: failed
-        }
-      }
-    ) {
-      aggregate {
-        count
-      }
-    }
+   
+    
   }
 
   totalXP: transaction_aggregate(
@@ -127,6 +107,8 @@ const PROFILE_QUERY = `
     }
   }
 }
+
+
 `;
 
 export function profileTemplate() {
@@ -290,9 +272,9 @@ export async function initProfile() {
 
     document.getElementById("audit-graph").innerHTML = auditGraph(user.totalUp, user.totalDown);
 
-    document.getElementById("audit-up").textContent = formatXP(user.totalUp);
+    document.getElementById("audit-up").textContent = formatXP(Math.trunc(user.totalUp),2);
 
-    document.getElementById("audit-down").textContent = formatXP(user.totalDown);
+    document.getElementById("audit-down").textContent = formatXP(user.totalDown,2);
 
     const skills = getLatestSkills(data.skills);
 
@@ -347,7 +329,7 @@ export async function initProfile() {
 
                     <div class="project-xp">
 
-                        ${formatXP(project.amount)}
+                        ${formatXP(project.amount , 1)}
 
                     </div>
 

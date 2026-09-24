@@ -1,4 +1,4 @@
-export function formatXP(value) {
+export function formatXP(value,n=0) {
 
     if (!value) {
         return "0 B";
@@ -16,7 +16,7 @@ export function formatXP(value) {
 
     const formatted = Number.isInteger(xp)
         ? xp
-        : xp.toFixed(0);
+        : xp.toFixed(n);
 
     return `${formatted} ${units[unitIndex]}`;
 
